@@ -35,7 +35,7 @@ static signed char handle_double_dash (const char*, const struct pa_option*, con
 static signed char check_arg_was_given_properly (const enum pa_takes, const enum element_is);
 static char *arg_was_given_unix_like (const char*);
 
-signed char pa_get (const unsigned int argc, char **argv, unsigned short *reading, const const struct pa_option *opts)
+signed char pa_get (const unsigned int argc, char **argv, unsigned short *reading, const struct pa_option *opts)
 {
     check_list_was_provided_ok(opts);
     static unsigned short index = 1;
