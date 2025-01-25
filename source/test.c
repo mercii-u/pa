@@ -5,7 +5,7 @@
 int main (int argc, char **argv)
 {
     static struct pa_option ops[] = {
-        {"document", '%', pa_takes_arg},
+        {"document", 'D', pa_takes_arg},
         {"help",     'H', pa_might_arg},
         {"readonly", 'R', pa_noway_arg},
         {NULL, 0, 0}
@@ -35,6 +35,11 @@ int main (int argc, char **argv)
                 printf("got 'R': %s\n", pa_argument ? pa_argument : "no arg");
                 break;
             }
+            case PA_POSITIONAL_ARG:
+            {
+                printf("positional arg: %s\n", pa_argument);
+                break;
+            }
 
             case PA_ERR_DASH_ONLY:
             {
@@ -56,11 +61,7 @@ int main (int argc, char **argv)
                 printf("error: argument was given even tho is it not needed: %s\n", argv[a]);
                 exit(0);
             }
-            case PA_ERR_ARG_WO_OPT:
-            {
-                printf("error: arg without option\n");
-                exit(0);
-            }
+
         }
     }
 

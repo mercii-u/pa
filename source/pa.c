@@ -57,7 +57,7 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
                 if (pa_argument != NULL) index++;
                 return ret;
             }
-            case ele_is_argument:   { return PA_ERR_ARG_WO_OPT; }
+            case ele_is_argument:   { pa_argument = (char*) ele; return PA_POSITIONAL_ARG; }
             case ele_is_dash_alone: { return PA_ERR_DASH_ONLY; }
             case ele_is_end:        { return PA_CEST_FINI; }
         }

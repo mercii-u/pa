@@ -2,12 +2,12 @@
 #define PARARG_PARARG_H
 
 #define PA_CEST_FINI          0
+#define PA_POSITIONAL_ARG     1
 
 #define PA_ERR_DASH_ONLY     -1
 #define PA_ERR_UNDEF_OP      -2
 #define PA_ERR_ARG_NO_GIVEN  -3
 #define PA_ERR_ARG_GIVEN     -4 
-#define PA_ERR_ARG_WO_OPT    -5
 
 enum pa_takes
 {
