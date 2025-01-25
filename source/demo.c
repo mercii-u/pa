@@ -61,11 +61,6 @@ int main (int argc, char **argv)
                 printf("error: argument was not given: %s\n", pa_flagname);
                 exit(0);
             }
-            case PA_ERR_ARG_GIVEN:
-            {
-                printf("error: argument was given even tho is it not needed: %s\n", argv[at]);
-                exit(0);
-            }
         }
     }
 

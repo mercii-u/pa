@@ -116,13 +116,9 @@ static signed char handle_single_dash (const char flag, const struct pa_option *
         if (opts[i].id != flag) { continue; }
 
         pa_flagname = opts[i].option;
-        const signed char ret = check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele));
-
-        switch (ret)
+        switch (check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele)))
         {
-            case PA_ERR_ARG_GIVEN   :
-            case PA_ERR_ARG_NO_GIVEN: { return ret; }
-
+            case PA_ERR_ARG_NO_GIVEN: { return PA_ERR_ARG_NO_GIVEN; }
             case DIDNT_TAKE_ARG: { return opts[i].id; }
             case TOOK_ARG: { pa_argument = (char*) next_ele; return opts[i].id; }
         }
@@ -156,13 +152,10 @@ static signed char handle_double_dash (const char *flag, const struct pa_option 
             return pa_argument == NULL ? PA_ERR_ARG_NO_GIVEN : opts[i].id;
         }
 
-        const signed char ret = check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele));
         *style = style_separated;
-
-        switch (ret)
+        switch (check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele)))
         {
-            case PA_ERR_ARG_GIVEN   :
-            case PA_ERR_ARG_NO_GIVEN: { return ret; }
+            case PA_ERR_ARG_NO_GIVEN: { return PA_ERR_ARG_NO_GIVEN; }
 
             case DIDNT_TAKE_ARG: { return opts[i].id; }
             case TOOK_ARG: { pa_argument = (char*) next_ele; return opts[i].id; }
@@ -175,7 +168,7 @@ static signed char handle_double_dash (const char *flag, const struct pa_option 
 static signed char check_arg_was_given_properly (const enum pa_takes takes, const enum element_is next_is)
 {
     if (takes == pa_takes_arg && next_is != ele_is_argument) { return PA_ERR_ARG_NO_GIVEN; }
-    if (takes == pa_noway_arg && next_is == ele_is_argument) { return PA_ERR_ARG_GIVEN; }
+    if (takes == pa_noway_arg && next_is == ele_is_argument) { return PA_POSITIONAL_ARG; }
 
     if (takes == pa_might_arg && next_is != ele_is_argument) { return DIDNT_TAKE_ARG; }
     if (takes == pa_noway_arg && next_is != ele_is_single) { return DIDNT_TAKE_ARG; }

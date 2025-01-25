@@ -7,7 +7,6 @@
 #define PA_ERR_DASH_ONLY     -1
 #define PA_ERR_UNDEF_OP      -2
 #define PA_ERR_ARG_NO_GIVEN  -3
-#define PA_ERR_ARG_GIVEN     -4 
 
 enum pa_takes
 {
