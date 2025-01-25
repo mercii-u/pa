@@ -41,7 +41,6 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
     static unsigned short index = 1;
 
     *reading = index;
-
     pa_argument = NULL;
 
     while (index < argc)
@@ -73,7 +72,6 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
     return PA_CEST_FINI;
 }
 
-
 static void check_list_was_provided_ok (const struct pa_option *opts)
 {
     for (unsigned short i = 0; opts[i].option != NULL; i++)
@@ -96,8 +94,10 @@ static void check_list_was_provided_ok (const struct pa_option *opts)
 
 static enum element_is get_element_kind (const char *ele)
 {
-    if (ele == NULL) { return ele_is_end; }
-
+    if (ele == NULL)
+    {
+        return ele_is_end;
+    }
     if (*ele == '-' && *(ele + 1) == '-')
     {
         return isalnum(*(ele + 2)) ? ele_is_double : ele_is_dash_alone;
@@ -106,7 +106,6 @@ static enum element_is get_element_kind (const char *ele)
     {
         return isalnum(*(ele + 1)) ? ele_is_single : ele_is_dash_alone;
     }
-
     return ele_is_argument;
 }
 
@@ -128,7 +127,6 @@ static signed char handle_single_dash (const char flag, const struct pa_option *
             case TOOK_ARG: { pa_argument = (char*) next_ele; return opts[i].id; }
         }
     }
-
     return PA_ERR_UNDEF_OP;
 }
 
@@ -146,7 +144,6 @@ static signed char handle_double_dash (const char *flag, const struct pa_option 
     }
 
     const size_t length = eqSignAt ? eqSignAt - 1 : strlen(flag);
-
     for (unsigned short i = 0; opts[i].option != NULL; i++)
     {
         if (strncmp(opts[i].option, flag, length)) { continue; }
@@ -173,7 +170,6 @@ static signed char handle_double_dash (const char *flag, const struct pa_option 
     }
 
     return PA_ERR_UNDEF_OP;
-
 }
 
 static signed char check_arg_was_given_properly (const enum pa_takes takes, const enum element_is next_is)

@@ -28,5 +28,4 @@ extern char *pa_flagname;
 
 signed char pa_get (const unsigned int, char**, unsigned short*, const struct pa_option*);
 
-
 #endif
