@@ -36,7 +36,14 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *_at, s
             case it_is_error: { return PA_ERR_EMPTY; }
             case it_is_single_op:
             {
-                return handle_single_op(*(this + 1), ops, at < argc ? argv[at] : NULL);
+                signed char its = handle_single_op(*(this + 1), ops, at < argc ? argv[at] : NULL);
+                if (its == *(this + 1)) at++;
+                return its;
+            }
+
+            case it_is_argument:
+            {
+                return PA_ERR_ARG_WO_OPT;
             }
         }
     }
@@ -74,13 +81,23 @@ int main (int argc, char **argv)
             case PA_ERR_UNDEF_OP:
                 printf("undef of\n");
                 break;
+            case PA_ERR_ARG_WO_OPT:
+                printf("arg withput option\n");
+                break;
 
             case 'D':
                 printf("D was found: %s\n", pa_argument);
                 break;
+
+            case 'H':
+                printf("H was found: %s\n", pa_argument);
+                break;
+
+            case 'R':
+                printf("R was found: %s\n", pa_argument);
+                break;
         }
     }
-
 
     return 0;
 }
