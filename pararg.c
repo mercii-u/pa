@@ -1,6 +1,9 @@
 #include "pararg.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
+
+#define IS_ERR(a)   ((a) <= 0)
 
 char *pa_argument = NULL;
 
@@ -16,8 +19,8 @@ enum whatIsThis
 static enum whatIsThis what_is_this (const char*);
 static char argument_was_provided ();
 
-
 static signed char handle_single_op (const char, struct pa_option*, const char*);
+static signed char handle_double_op (const char*, struct pa_option*, const char*);
 
 
 signed char pa_get (const unsigned int argc, char **argv, unsigned short *_at, struct pa_option *ops)
@@ -37,10 +40,15 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *_at, s
             case it_is_single_op:
             {
                 signed char its = handle_single_op(*(this + 1), ops, at < argc ? argv[at] : NULL);
-                if (its == *(this + 1)) at++;
+                if (!IS_ERR(its)) at++;
                 return its;
             }
-
+            case it_is_double_op:
+            {
+                signed char its = handle_double_op(this, ops, at < argc ? argv[at] : NULL);
+                if (!IS_ERR(its)) at++;
+                return its;
+            }
             case it_is_argument:
             {
                 return PA_ERR_ARG_WO_OPT;
@@ -140,6 +148,32 @@ static signed char handle_single_op (const char single, struct pa_option *ops, c
 
             pa_argument = (char*) nextinargv;
             return single;
+        }
+        optind++;
+    }
+
+    return PA_ERR_UNDEF_OP;
+}
+
+static signed char handle_double_op (const char *option, struct pa_option *ops, const char *nextinargv)
+{
+    const enum whatIsThis nextis = what_is_this(nextinargv);
+    unsigned short optind = 0;
+
+    const size_t length = strlen(option + 2);
+
+    while (ops[optind].option)
+    {
+        if (!strncmp(ops[optind].option, option + 2, length))
+        {
+            const enum pa_takes takes = ops[optind].takes;
+
+            if (takes == pa_takes_arg && nextis != it_is_argument) { return PA_ERR_ARG_NO_GIVEN; }
+            if (takes == pa_noway_arg && nextis == it_is_argument) { return PA_ERR_ARG_GIVEN; }
+            if (nextis != it_is_argument && takes == pa_might_arg) { return ops[optind].id; }
+
+            pa_argument = (char*) nextinargv;
+            return ops[optind].id;
         }
         optind++;
     }
