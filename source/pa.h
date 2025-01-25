@@ -2,7 +2,8 @@
 #define PARARG_PARARG_H
 
 #define PA_CEST_FINI          0
-#define PA_ERR_EMPTY         -1
+
+#define PA_ERR_DASH_ONLY     -1
 #define PA_ERR_UNDEF_OP      -2
 #define PA_ERR_ARG_NO_GIVEN  -3
 #define PA_ERR_ARG_GIVEN     -4 
@@ -23,6 +24,7 @@ struct pa_option
 };
 
 extern char *pa_argument;
+extern char *pa_flagname;
 
 signed char pa_get (const unsigned int, char**, unsigned short*, struct pa_option*);
 
