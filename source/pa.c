@@ -17,19 +17,25 @@ enum element_is
     ele_is_end
 };
 
+enum arg_style
+{
+    style_unix,
+    style_separated
+};
+
 char *pa_argument = NULL;
 char *pa_flagname = NULL;
 
-static void check_list_was_provided_ok (struct pa_option*);
+static void check_list_was_provided_ok (const struct pa_option*);
 static enum element_is get_element_kind (const char*);
 
-static signed char handle_single_dash (const char, struct pa_option*, const char*);
-static signed char handle_double_dash (const char*, struct pa_option*, const char*);
+static signed char handle_single_dash (const char, const struct pa_option*, const char*);
+static signed char handle_double_dash (const char*, const struct pa_option*, const char*, enum arg_style*);
 
 static signed char check_arg_was_given_properly (const enum pa_takes, const enum element_is);
 static char *arg_was_given_unix_like (const char*);
 
-signed char pa_get (const unsigned int argc, char **argv, unsigned short *reading, struct pa_option *opts)
+signed char pa_get (const unsigned int argc, char **argv, unsigned short *reading, const const struct pa_option *opts)
 {
     check_list_was_provided_ok(opts);
     static unsigned short index = 1;
@@ -53,8 +59,9 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
             }
             case ele_is_double:
             {
-                signed char ret = handle_double_dash(ele + 2, opts, next_ele);
-                if (pa_argument != NULL) index++;
+                enum arg_style style;
+                signed char ret = handle_double_dash(ele + 2, opts, next_ele, &style);
+                if (pa_argument != NULL && style != style_unix) index++;
                 return ret;
             }
             case ele_is_argument:   { pa_argument = (char*) ele; return PA_POSITIONAL_ARG; }
@@ -67,7 +74,7 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
 }
 
 
-static void check_list_was_provided_ok (struct pa_option *opts)
+static void check_list_was_provided_ok (const struct pa_option *opts)
 {
     for (unsigned short i = 0; opts[i].option != NULL; i++)
     {
@@ -103,7 +110,7 @@ static enum element_is get_element_kind (const char *ele)
     return ele_is_argument;
 }
 
-static signed char handle_single_dash (const char flag, struct pa_option *opts, const char *next_ele)
+static signed char handle_single_dash (const char flag, const struct pa_option *opts, const char *next_ele)
 {
     for (unsigned short i = 0; opts[i].option != NULL; i++)
     {
@@ -125,7 +132,7 @@ static signed char handle_single_dash (const char flag, struct pa_option *opts, 
     return PA_ERR_UNDEF_OP;
 }
 
-static signed char handle_double_dash (const char *flag, struct pa_option *opts, const char *next_ele)
+static signed char handle_double_dash (const char *flag, const struct pa_option *opts, const char *next_ele, enum arg_style *style)
 {
 
     /* UNIX/GNU like:
@@ -147,11 +154,14 @@ static signed char handle_double_dash (const char *flag, struct pa_option *opts,
         pa_flagname = opts[i].option;
         if (eqSignAt != 0 && opts[i].takes == pa_takes_arg)
         {
+            *style = style_unix;
             pa_argument = arg_was_given_unix_like(flag + eqSignAt + 1);
             return pa_argument == NULL ? PA_ERR_ARG_NO_GIVEN : opts[i].id;
         }
 
         const signed char ret = check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele));
+        *style = style_separated;
+
         switch (ret)
         {
             case PA_ERR_ARG_GIVEN   :

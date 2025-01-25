@@ -1,0 +1,39 @@
+
+    PA (Parser arguments for C)
+
+    This is another argument parser, this was implemented since
+    getopt by GNU did not return the name of the flag but the
+    element in argv instead when an error occurred.
+
+    This can be used as getopt is, the usage is pretty simple,
+    just create a `pa_option` struct with the flags you
+    need, for example
+
+    struct pa_option flags[] =
+    {
+        {"filename", 'f', pa_takes_arg},
+        {"help",     'h', pa_noway_arg},
+        {"color",    'c', pa_might_arg},
+
+        {NULL, 0, 0}
+    };
+
+    Where the first element is the name of the flag, the
+    second the id of that flag and the third is to specify
+    if the flag needs any argument.
+    
+    It accepts double slash (using the flag name) and single
+    slash by using the id, for example
+
+    $ ./a.out --filename somefile -c ../colors
+
+    For single dashed flags the argument must be separated
+    from the flag, for double dashed flags it can either be
+
+    --filename filename
+    --filename=filename
+
+    You can take a look at 'source/demo.c' to get a better
+    understanding
+
+    Juan Diego PM - Jan 25 2025

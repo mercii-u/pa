@@ -26,7 +26,7 @@ struct pa_option
 extern char *pa_argument;
 extern char *pa_flagname;
 
-signed char pa_get (const unsigned int, char**, unsigned short*, struct pa_option*);
+signed char pa_get (const unsigned int, char**, unsigned short*, const struct pa_option*);
 
 
 #endif
