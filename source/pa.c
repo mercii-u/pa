@@ -63,8 +63,8 @@ signed char pa_get (const unsigned int argc, char **argv, unsigned short *readin
                 if (pa_argument != NULL && style != style_unix) index++;
                 return ret;
             }
-            case ele_is_argument:   { pa_argument = (char*) ele; return PA_POSITIONAL_ARG; }
-            case ele_is_dash_alone: { return PA_ERR_DASH_ONLY; }
+            case ele_is_argument:   
+            case ele_is_dash_alone: { pa_argument = (char*) ele; return PA_POSITIONAL_ARG; }
             case ele_is_end:        { return PA_CEST_FINI; }
         }
     }
@@ -139,13 +139,13 @@ static signed char handle_double_dash (const char *flag, const struct pa_option 
         if (flag[i] == '=') { eqSignAt = i; break; }
     }
 
-    const size_t length = eqSignAt ? eqSignAt - 1 : strlen(flag);
     for (unsigned short i = 0; opts[i].option != NULL; i++)
     {
-        if (strncmp(opts[i].option, flag, length)) { continue; }
+        if (strncmp(opts[i].option, flag, strlen(opts[i].option))) { continue; }
 
         pa_flagname = opts[i].option;
-        if (eqSignAt != 0 && opts[i].takes == pa_takes_arg)
+
+        if (eqSignAt != 0 && (opts[i].takes != pa_takes_arg))
         {
             *style = style_unix;
             pa_argument = arg_was_given_unix_like(flag + eqSignAt + 1);
@@ -180,7 +180,7 @@ static char *arg_was_given_unix_like (const char *value)
 {
     size_t length = 0;
     for (; value[length]; length++) ;
-
+    
     if (length == 0) return NULL;
 
     char *arg = (char*) calloc(1, length + 1);
