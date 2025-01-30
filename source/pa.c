@@ -30,6 +30,10 @@ static void check_options_are_ok (const struct pa_option*, const unsigned short)
 static enum pa_return kind_of_thing (const char*);
 
 static enum pa_return handle_1s (const char, const unsigned short, char*, const struct pa_option*);
+static enum pa_return handle_2s (const char*, char*, const unsigned short, const struct pa_option*);
+
+static enum pa_return check_flag (const enum pa_takes, char*, const char);
+static unsigned int unix_like (const char*, unsigned int*);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
@@ -60,7 +64,10 @@ pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const 
 
             case pa_ret_2s_flag:
             {
-                break;
+
+                const enum pa_return ret = handle_2s(thing + 2, next, nopts, opts);
+                if (pa_argument != NULL) { at++; }
+                return ret;
             }
 
             case pa_ret_argument:
@@ -143,26 +150,78 @@ static enum pa_return handle_1s (const char id, const unsigned short nopts, char
     {
         if (opts[i].id != id) { continue; }
         pa_flagname = opts[i].flag;
-
-        const enum pa_takes takes = opts[i].takes;
-        const enum pa_return nexts = kind_of_thing(next);
-
-        if (takes == pa_takes_arg)
-        {
-            if (nexts != pa_ret_argument) { return pa_ret_missed_arg; }
-            pa_argument = next;
-            return id;
-        }
-        else if (takes == pa_might_arg)
-        {
-            if (nexts != pa_ret_argument) { return id; }
-            pa_argument = next;
-            return id;
-        }
-        else if (takes == pa_noway_arg)
-        {
-            return id;
-        }
+        return check_flag(opts[i].takes, next, id);
     }
     return pa_ret_undef_flag;
+}
+
+static enum pa_return handle_2s (const char *flag, char *next, const unsigned short nopts, const struct pa_option *opts)
+{
+    for (unsigned short i = 0; i < nopts; i++)
+    {
+        if (strncmp(flag, opts[i].flag, FlagLengths[i])) { continue; }
+        pa_flagname = opts[i].flag;
+
+        if (pa_unixstyle_allowed)
+        {
+            unsigned int argStartsAt;
+            const unsigned int diff = unix_like(flag, &argStartsAt);
+
+            printf("hey: %d %d\n", argStartsAt, diff);
+
+            if (opts[i].takes == pa_noway_arg) { return diff ? pa_ret_nonsense : opts[i].id; }
+            if (opts[i].takes == pa_might_arg && diff == 0) { return opts[i].id; }
+            if (opts[i].takes == pa_takes_arg && diff == 0) { return pa_ret_missed_arg; }
+
+            pa_argument = (char*) calloc(diff, sizeof(char));
+            CHECK_ALLOC(pa_argument);
+
+            memcpy(pa_argument, flag + argStartsAt, diff);
+            return opts[i].id;
+        }
+
+        return check_flag(opts[i].takes, next, opts[i].id);
+    }
+    return pa_ret_undef_flag;
+}
+
+static enum pa_return check_flag (const enum pa_takes takes, char *next, const char id)
+{
+    const enum pa_return nexts = kind_of_thing(next);
+
+    if (takes == pa_takes_arg)
+    {
+        if (nexts != pa_ret_argument) { return pa_ret_missed_arg; }
+        pa_argument = next;
+        return id;
+    }
+    if (takes == pa_might_arg)
+    {
+        if (nexts != pa_ret_argument) { return id; }
+        pa_argument = next;
+        return id;
+    }
+
+    return id;
+}
+
+static unsigned int unix_like (const char *thing, unsigned int *argStartsAt)
+{
+    /* Suppose this scenario:
+     * --flag=a
+     * 01234567
+     *
+     * This whole element in argv has a length
+     * of 16 bytes, the equal sign is found at
+     * the seventh byte, what this function
+     * returns is the difference between the whole
+     * legth and the position where `=` was found
+     * plus one, if no `=` is found the diff is gonna
+     * be zero since `i` reaches the end
+     */
+    unsigned int i = 0, len = strlen(thing);
+    for (; thing[0] != 0 && thing[i] != '='; i++) ;;
+
+    *argStartsAt = i + 1;
+    return len - ++i;
 }
