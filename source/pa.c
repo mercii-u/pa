@@ -1,195 +1,132 @@
 #include "pa.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
-#define TOOK_ARG        1
-#define DIDNT_TAKE_ARG  2
+#define CHECK_ALLOC(ptr)                                   \
+    do {                                                   \
+        if (ptr) break;                                    \
+        fprintf(stderr, "PA: Cannot allocate memoery\n");  \
+        exit(EXIT_FAILURE);                                \
+    } while (0)
 
-enum element_is
-{
-    ele_is_single,
-    ele_is_double,
-    ele_is_argument,
-    ele_is_dash_alone,
-    ele_is_end
-};
+#define PATH_SPECIFIER(a)   ((a == '~') || (a == '.') || (a == '/'))
 
-enum arg_style
-{
-    style_unix,
-    style_separated
-};
-
+/* Extern defs.
+ */
 char *pa_argument = NULL;
 char *pa_flagname = NULL;
+char pa_unixstyle_allowed = 1;
 
-static void check_list_was_provided_ok (const struct pa_option*);
-static enum element_is get_element_kind (const char*);
+/* This array stores the length of every flagname provided
+ * in the options, this is made in order to not recalculate
+ * them every time PA is looking for an flag.
+ */
+unsigned int *FlagLengths = NULL;
 
-static signed char handle_single_dash (const char, const struct pa_option*, const char*);
-static signed char handle_double_dash (const char*, const struct pa_option*, const char*, enum arg_style*);
+static void check_options_are_ok (const struct pa_option*, const unsigned short);
+static enum pa_return kind_of_thing (const char*);
 
-static signed char check_arg_was_given_properly (const enum pa_takes, const enum element_is);
-static char *arg_was_given_unix_like (const char*);
+static enum pa_return handle_flag (const char*, const char, const char*, const struct pa_option*);
 
-signed char pa_get (const unsigned int argc, char **argv, unsigned short *reading, const struct pa_option *opts)
+pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
-    check_list_was_provided_ok(opts);
-    static unsigned short index = 1;
+    if (FlagLengths == NULL) { check_options_are_ok(opts, nopts); }
 
-    *reading = index;
-    pa_argument = NULL;
-
-    while (index < argc)
-    {
-        const char *ele = argv[index++];
-        const char *next_ele = (index < argc) ? argv[index] : NULL;
-
-        switch (get_element_kind(ele))
-        {
-            case ele_is_single:
-            {
-                signed char ret = handle_single_dash(*(ele + 1), opts, next_ele);
-                if (pa_argument != NULL) index++;
-                return ret;
-            }
-            case ele_is_double:
-            {
-                enum arg_style style;
-                signed char ret = handle_double_dash(ele + 2, opts, next_ele, &style);
-                if (pa_argument != NULL && style != style_unix) index++;
-                return ret;
-            }
-            case ele_is_argument:   
-            case ele_is_dash_alone: { pa_argument = (char*) ele; return PA_POSITIONAL_ARG; }
-            case ele_is_end:        { return PA_CEST_FINI; }
-        }
-    }
-
-    return PA_CEST_FINI;
-}
-
-static void check_list_was_provided_ok (const struct pa_option *opts)
-{
-    for (unsigned short i = 0; opts[i].option != NULL; i++)
-    {
-        if (!isalnum(opts[i].id))
-        {
-            static const char *const errmsg =
-             "\n"
-             "  PA: error: Id cannot be '%c' -> %d ASCII\n"
-             "  flag `%s` was assigned to `%c` id\n"
-             "  make sure the id is either a digit [0 - 9] or a character from the alphabet [a - z] or [A - Z]\n"
-             "\n";
-
-            const char id  = opts[i].id;
-            fprintf(stderr, errmsg, id, id, opts[i].option, id);
-            exit(EXIT_FAILURE);
-        }
-    }
-}
-
-static enum element_is get_element_kind (const char *ele)
-{
-    if (ele == NULL)
-    {
-        return ele_is_end;
-    }
-    if (*ele == '-' && *(ele + 1) == '-')
-    {
-        return isalnum(*(ele + 2)) ? ele_is_double : ele_is_dash_alone;
-    }
-    if (*ele == '-')
-    {
-        return isalnum(*(ele + 1)) ? ele_is_single : ele_is_dash_alone;
-    }
-    return ele_is_argument;
-}
-
-static signed char handle_single_dash (const char flag, const struct pa_option *opts, const char *next_ele)
-{
-    for (unsigned short i = 0; opts[i].option != NULL; i++)
-    {
-        if (opts[i].id != flag) { continue; }
-
-        pa_flagname = opts[i].option;
-        switch (check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele)))
-        {
-            case PA_ERR_ARG_NO_GIVEN: { return PA_ERR_ARG_NO_GIVEN; }
-            case DIDNT_TAKE_ARG: { return opts[i].id; }
-            case TOOK_ARG: { pa_argument = (char*) next_ele; return opts[i].id; }
-        }
-    }
-    return PA_ERR_UNDEF_OP;
-}
-
-static signed char handle_double_dash (const char *flag, const struct pa_option *opts, const char *next_ele, enum arg_style *style)
-{
-
-    /* UNIX/GNU like:
-     * GNU uses this style --flag=value i really do not like it
-     * but it is useful as well.
+    /* `at` is an index to know what element is being read
+     * from argv, this is also a way to let the programmer
+     * to know what was the last string read in argv
      */
-    size_t eqSignAt = 0;
-    for (size_t i = 0; flag[i]; i++)
+    static unsigned short at = 1;
+    *index = at;
+
+    while (at < argc)
     {
-        if (flag[i] == '=') { eqSignAt = i; break; }
-    }
-
-    for (unsigned short i = 0; opts[i].option != NULL; i++)
-    {
-        if (strncmp(opts[i].option, flag, strlen(opts[i].option))) { continue; }
-
-        pa_flagname = opts[i].option;
-
-        if (eqSignAt != 0 && (opts[i].takes != pa_takes_arg))
+        const char *thing = argv[at++];
+        switch (kind_of_thing(thing))
         {
-            *style = style_unix;
-            pa_argument = arg_was_given_unix_like(flag + eqSignAt + 1);
-            return pa_argument == NULL ? PA_ERR_ARG_NO_GIVEN : opts[i].id;
-        }
+            case pa_ret_nonsense:
+            {
+                return pa_ret_nonsense;
+            }
 
-        *style = style_separated;
-        switch (check_arg_was_given_properly(opts[i].takes, get_element_kind(next_ele)))
-        {
-            case PA_ERR_ARG_NO_GIVEN: { return PA_ERR_ARG_NO_GIVEN; }
+            case pa_ret_1s_flag:
+            case pa_ret_2s_flag:
+            {
+                break;
+            }
 
-            case DIDNT_TAKE_ARG: { return opts[i].id; }
-            case TOOK_ARG: { pa_argument = (char*) next_ele; return opts[i].id; }
+            case pa_ret_argument:
+            {
+                printf("is anum argumenbt\n");
+                break;
+            }
         }
     }
 
-    return PA_ERR_UNDEF_OP;
+    if (FlagLengths) { free(FlagLengths); }
+    return pa_ret_cest_fini;
 }
 
-static signed char check_arg_was_given_properly (const enum pa_takes takes, const enum element_is next_is)
+static void check_options_are_ok (const struct pa_option *opts, const unsigned short nopts)
 {
-    if (takes == pa_takes_arg && next_is != ele_is_argument) { return PA_ERR_ARG_NO_GIVEN; }
-    if (takes == pa_noway_arg && next_is == ele_is_argument) { return PA_POSITIONAL_ARG; }
+    FlagLengths = (unsigned int*) calloc(nopts, sizeof(*FlagLengths));
+    CHECK_ALLOC(FlagLengths);
 
-    if (takes == pa_might_arg && next_is != ele_is_argument) { return DIDNT_TAKE_ARG; }
-    if (takes == pa_noway_arg && next_is != ele_is_single) { return DIDNT_TAKE_ARG; }
+    char *errReason = NULL;
+    unsigned short opterr;
 
-    return TOOK_ARG;
-}
-
-static char *arg_was_given_unix_like (const char *value)
-{
-    size_t length = 0;
-    for (; value[length]; length++) ;
-    
-    if (length == 0) return NULL;
-
-    char *arg = (char*) calloc(1, length + 1);
-    if (arg == NULL)
+    for (unsigned int i = 0; i < nopts; i++)
     {
-        fprintf(stderr, "\n  PA: Cannot allocate memoery\n\n");
+        if (opts[i].flag == NULL)
+        {
+            errReason = "Flagnames cannot be null nor start with spaces";
+            opterr = i;
+            break;
+        }
+        if (!isalnum(opts[i].id) || !isalnum(opts[i].flag[0]))
+        {
+            errReason = "Both id and flagnames must only contain [0-9] [a-z] or [A-Z]";
+            opterr = i;
+            break;
+        }
+
+        FlagLengths[i] = (unsigned int) strlen(opts[i].flag);
+        if (FlagLengths[i] == 0)
+        {
+            errReason = "Flagnames cannot be empty";
+            opterr = i;
+            break;
+        }
+    }
+
+    if (errReason != NULL)
+    {
+        fprintf(stderr, "\n  PA: error: %s\n", errReason);
+        fprintf(stderr, "        bad: %dth option\n\n", ++opterr);
         exit(EXIT_FAILURE);
     }
+}
 
-    memcpy(arg, value, length);
-    return arg;
+static enum pa_return kind_of_thing (const char *thing)
+{
+    if (*thing == '-' && isalnum(*(thing + 1)) && *(thing + 2) == 0)
+    {
+        return pa_ret_1s_flag;
+    }
+    if (*thing == '-' && *(thing + 1) == '-' && isalnum(*(thing + 2)))
+    {
+        return pa_ret_2s_flag;
+    }
+    if (isalnum(*thing) || PATH_SPECIFIER(*thing))
+    {
+        return pa_ret_argument;
+    }
+    return pa_ret_nonsense;
+}
+
+static enum pa_return handle_flag (const char *flag, const char id, const char *next, const struct pa_option *opts)
+{
 }
