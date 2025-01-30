@@ -27,8 +27,8 @@ enum pa_return
      * uses these enums to handle errors
      */
     pa_ret_cest_fini    =  0,                               // ok
-    pa_ret_pos_arg      = -1,
-    pa_ret_undef_flag   = -2,
+    pa_ret_pos_arg      = -1,                               // ok
+    pa_ret_undef_flag   = -2,                               // ok
     pa_ret_missed_arg   = -3,
     pa_ret_nonsense     = -4,                               // ok
     /* Internal usage, pa.c uses these enums

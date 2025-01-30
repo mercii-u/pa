@@ -29,7 +29,7 @@ unsigned int *FlagLengths = NULL;
 static void check_options_are_ok (const struct pa_option*, const unsigned short);
 static enum pa_return kind_of_thing (const char*);
 
-static enum pa_return handle_flag (const char*, const char, const char*, const struct pa_option*);
+static enum pa_return handle_1s (const char, const unsigned short, char*, const struct pa_option*);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
@@ -44,15 +44,20 @@ pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const 
 
     while (at < argc)
     {
-        const char *thing = argv[at++];
+        char *thing = argv[at++], *next = (at < argc) ? argv[at] : NULL;
+        pa_argument = NULL;
+
         switch (kind_of_thing(thing))
         {
-            case pa_ret_nonsense:
-            {
-                return pa_ret_nonsense;
-            }
+            case pa_ret_nonsense: { return pa_ret_nonsense; }
 
             case pa_ret_1s_flag:
+            {
+                const enum pa_return ret = handle_1s(*(thing + 1), nopts, next, opts);
+                if (pa_argument != NULL) { at++; }
+                return ret;
+            }
+
             case pa_ret_2s_flag:
             {
                 break;
@@ -60,8 +65,8 @@ pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const 
 
             case pa_ret_argument:
             {
-                printf("is anum argumenbt\n");
-                break;
+                pa_argument = thing;
+                return pa_ret_pos_arg;
             }
         }
     }
@@ -112,6 +117,10 @@ static void check_options_are_ok (const struct pa_option *opts, const unsigned s
 
 static enum pa_return kind_of_thing (const char *thing)
 {
+    if (thing == NULL)
+    {
+        return pa_ret_nonsense;
+    }
     if (*thing == '-' && isalnum(*(thing + 1)) && *(thing + 2) == 0)
     {
         return pa_ret_1s_flag;
@@ -127,6 +136,33 @@ static enum pa_return kind_of_thing (const char *thing)
     return pa_ret_nonsense;
 }
 
-static enum pa_return handle_flag (const char *flag, const char id, const char *next, const struct pa_option *opts)
+
+static enum pa_return handle_1s (const char id, const unsigned short nopts, char *next, const struct pa_option *opts)
 {
+    for (unsigned short i = 0; i < nopts; i++)
+    {
+        if (opts[i].id != id) { continue; }
+        pa_flagname = opts[i].flag;
+
+        const enum pa_takes takes = opts[i].takes;
+        const enum pa_return nexts = kind_of_thing(next);
+
+        if (takes == pa_takes_arg)
+        {
+            if (nexts != pa_ret_argument) { return pa_ret_missed_arg; }
+            pa_argument = next;
+            return id;
+        }
+        else if (takes == pa_might_arg)
+        {
+            if (nexts != pa_ret_argument) { return id; }
+            pa_argument = next;
+            return id;
+        }
+        else if (takes == pa_noway_arg)
+        {
+            return id;
+        }
+    }
+    return pa_ret_undef_flag;
 }
