@@ -24,7 +24,10 @@ char pa_unixstyle_allowed = 1;
  * in the options, this is made in order to not recalculate
  * them every time PA is looking for an flag.
  */
-unsigned int *FlagLengths = NULL;
+static unsigned int *FlagLengths = NULL;
+
+static char *CallerName;
+
 
 static void check_options_are_ok (const struct pa_option*, const unsigned short);
 static enum pa_return kind_of_thing (const char*);
@@ -37,7 +40,11 @@ static unsigned int unix_like (const char*, unsigned int*);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
-    if (FlagLengths == NULL) { check_options_are_ok(opts, nopts); }
+    if (FlagLengths == NULL)
+    {
+        check_options_are_ok(opts, nopts);
+        CallerName = *argv;
+    }
 
     /* `at` is an index to know what element is being read
      * from argv, this is also a way to let the programmer

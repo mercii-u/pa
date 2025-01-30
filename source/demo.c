@@ -4,10 +4,6 @@
 
 int main (int argc, char **argv)
 {
-    // -
-    // --
-    // hola /home/ ./dert
-
     static const struct pa_option opts[] =
     {
         {"takes", 't', pa_takes_arg},
@@ -16,17 +12,6 @@ int main (int argc, char **argv)
     };
 
     unsigned short a;
-
-
-    // takes argument, and argument is given                    ok
-    // takes argument, and argument is not given                ok
-
-    // might take argument and artgument is given               ok
-    // might take argument and arguent aint given               ok
-
-    // ntakes argument and argument is given                    ok
-    // ntakes argument and agrumebt aint given                  ok
-
 
     while (1)
     {
