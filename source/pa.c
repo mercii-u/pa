@@ -167,8 +167,6 @@ static enum pa_return handle_2s (const char *flag, char *next, const unsigned sh
             unsigned int argStartsAt;
             const unsigned int diff = unix_like(flag, &argStartsAt);
 
-            printf("hey: %d %d\n", argStartsAt, diff);
-
             if (opts[i].takes == pa_noway_arg) { return diff ? pa_ret_nonsense : opts[i].id; }
             if (opts[i].takes == pa_might_arg && diff == 0) { return opts[i].id; }
             if (opts[i].takes == pa_takes_arg && diff == 0) { return pa_ret_missed_arg; }

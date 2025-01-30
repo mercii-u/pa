@@ -1,39 +1,30 @@
 
     PA (Parser arguments for C)
 
-    This is another argument parser, this was implemented since
-    getopt by GNU did not return the name of the flag but the
-    element in argv instead when an error occurred.
+    My alternative to getopt by GNU since it does not provide
+    the last flagname used, and as an exercise maybe...
 
-    This can be used as getopt is, the usage is pretty simple,
-    just create a `pa_option` struct with the flags you
-    need, for example
+    It's pretty simple to use, you can take a look into
+    'demo.c' and test it by compiling it and running it
 
-    struct pa_option flags[] =
-    {
-        {"filename", 'f', pa_takes_arg},
-        {"help",     'h', pa_noway_arg},
-        {"color",    'c', pa_might_arg},
+    An argument can be given as:
+    -a      <argument>              by id
+    --add   <argument>              by flagname
+    --add=<argument>                unix-like
 
-        {NULL, 0, 0}
-    };
+    If a flag does not take an argument but an argument
+    is given it will be interpreted as a positional argument
 
-    Where the first element is the name of the flag, the
-    second the id of that flag and the third is to specify
-    if the flag needs any argument.
-    
-    It accepts double slash (using the flag name) and single
-    slash by using the id, for example
+    --does-not-take-arg <argument-dahhh> 
+       \                       `~~~~~~~~~> this is given as an independent thing (pa_ret_pos_arg)
+        `~~~~~~~~ id of this argument is given
 
-    $ ./a.out --filename somefile -c ../colors
+    If a flag requires an argument but no argument is given
+    it does not terminate the program, it will return `pa_ret_missed_arg`
+    and it will be handled by the programmer as they want.
 
-    For single dashed flags the argument must be separated
-    from the flag, for double dashed flags it can either be
+    In fact the only two errors which can terminate the program are:
+      * Cannot allocate memory
+      * pa_option structure is bad defined
 
-    --filename filename
-    --filename=filename
-
-    You can take a look at 'source/demo.c' to get a better
-    understanding
-
-    Juan Diego PM - Jan 25 2025
+    Juan Diego PM - Jan 30 2025
