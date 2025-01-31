@@ -8,7 +8,7 @@
 #define CHECK_ALLOC(ptr)                                   \
     do {                                                   \
         if (ptr) break;                                    \
-        fprintf(stderr, "PA: Cannot allocate memoery\n");  \
+        fprintf(stderr, "PA: Cannot allocate memory\n");   \
         exit(EXIT_FAILURE);                                \
     } while (0)
 
@@ -27,7 +27,6 @@ char pa_unixstyle_allowed = 1;
 static unsigned int *FlagLengths = NULL;
 
 static char *CallerName;
-
 
 static void check_options_are_ok (const struct pa_option*, const unsigned short);
 static enum pa_return kind_of_thing (const char*);
@@ -123,8 +122,13 @@ static void check_options_are_ok (const struct pa_option *opts, const unsigned s
 
     if (errReason != NULL)
     {
-        fprintf(stderr, "\n  PA: error: %s\n", errReason);
-        fprintf(stderr, "        bad: %dth option\n\n", ++opterr);
+        static const char const *err =
+         "\n"
+         "  [PA:%s]: cannot continue...\n"
+         "   due to: %s\n"
+         "       at: %dth option\n"
+         "\n";
+        fprintf(stderr, err, CallerName, errReason, ++opterr);
         exit(EXIT_FAILURE);
     }
 }
