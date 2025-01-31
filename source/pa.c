@@ -12,13 +12,18 @@
         exit(EXIT_FAILURE);                                \
     } while (0)
 
+#define MAX(a, b)   ((a) > (b) ? (a) : (b))
+#define MIN(a, b)   ((a) < (b) ? (a) : (b))
+
 #define PATH_SPECIFIER(a)   ((a == '~') || (a == '.') || (a == '/'))
 
 /* Extern defs.
  */
 char *pa_argument = NULL;
 char *pa_flagname = NULL;
+
 char pa_unixstyle_allowed = 1;
+char pa_do_fuzzy_matching = 1;
 
 /* This array stores the length of every flagname provided
  * in the options, this is made in order to not recalculate
@@ -26,8 +31,9 @@ char pa_unixstyle_allowed = 1;
  */
 static unsigned int *FlagLengths = NULL;
 
+/* Executable name aka argv[0]
+ */
 static char *CallerName;
-
 
 static void check_options_are_ok (const struct pa_option*, const unsigned short);
 static enum pa_return kind_of_thing (const char*);
@@ -37,6 +43,9 @@ static enum pa_return handle_2s (const char*, char*, const unsigned short, const
 
 static enum pa_return check_flag (const enum pa_takes, char*, const char);
 static unsigned int unix_like (const char*, unsigned int*);
+
+static void do_fuzzy_matching (const char*, const unsigned short, const struct pa_option*);
+static double jaro_distance (const char*, const char*, const size_t, const size_t);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
@@ -187,6 +196,8 @@ static enum pa_return handle_2s (const char *flag, char *next, const unsigned sh
 
         return check_flag(opts[i].takes, next, opts[i].id);
     }
+
+    do_fuzzy_matching(flag + 2, nopts, opts);
     return pa_ret_undef_flag;
 }
 
@@ -229,4 +240,70 @@ static unsigned int unix_like (const char *thing, unsigned int *argStartsAt)
 
     *argStartsAt = i + 1;
     return len - ++i;
+}
+
+static void do_fuzzy_matching (const char *flag, const unsigned short nopts, const struct pa_option *opts)
+{
+    const size_t flaglen = strlen(flag);
+
+    for (unsigned short i = 0; i < nopts; i++)
+    {
+        const size_t thslen = strlen(opts[i].flag);
+    }
+}
+
+static double jaro_distance (const char *s1, const char *s2, const size_t s1len, const size_t s2len)
+{
+    if (!strncmp(s1, s2, s1len) && s1 == s2) { return 1.0f; }
+
+    const unsigned int maxDist = ((unsigned int) (MAX(s1len, s2len) >> 1)) - 1;
+
+    unsigned int matches = 0;
+
+    unsigned int* hash1 = (unsigned int*) calloc(s1len, sizeof(unsigned int));
+    unsigned int* hash2 = (unsigned int*) calloc(s2len, sizeof(unsigned int));
+
+    CHECK_ALLOC(hash1);
+    CHECK_ALLOC(hash2);
+
+    for (signed int i = 0; i < s1len; i++)
+    {
+        for (signed int j = MAX(0, i - maxDist); j < MIN(s2len, i + maxDist + 1); j++)
+        {
+            if (s1[i] == s2[j] && hash2[j] == 0)
+            {
+                hash1[i] = 1;
+                hash2[i] = 1;
+                matches++;
+                break;
+            }
+        }
+    }
+
+    if (matches == 0) { return 0.0f; }
+
+    double t = 0;
+    int pnt = 0;
+
+    for (unsigned int i = 0; i < s1len; i++)
+    {
+        if (hash1[i] != 0)
+        {
+            while (hash2[pnt] == 0) { pnt++; }
+            if (s1[i] != s2[pnt++]) { t++; }
+        }
+    }
+
+    t /= 2.0f;
+
+    const double a = ((double) matches)     / ((double) s1len);
+    const double b = ((double) matches)     / ((double) s2len);
+    const double c = ((double) matches - t) / ((double) matches);
+
+    return (a + b + c) / 3.0f;
+}
+
+int main (void)
+{
+    printf("%f\n", jaro_winkler("TRATE", "TRACE"));
 }
