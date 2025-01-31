@@ -2,11 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static void list_similar (const char*);
+
 int main (int argc, char **argv)
 {
     static const struct pa_option opts[] =
     {
         {"takes", 't', pa_takes_arg},
+        {"commit", 'c', pa_takes_arg},
+        {"add",   'a', pa_takes_arg},
         {"might", 'm', pa_might_arg},
         {"noway", 'n', pa_noway_arg},
     };
@@ -15,7 +19,7 @@ int main (int argc, char **argv)
 
     while (1)
     {
-        pa_t ret = pa_get(argc, argv, &a, 3, opts);
+        pa_t ret = pa_get(argc, argv, &a, 4, opts);
         if (ret == pa_ret_cest_fini) { break; }
 
         switch (ret)
@@ -43,6 +47,7 @@ int main (int argc, char **argv)
             case pa_ret_undef_flag:
             {
                 printf("undeflag! %s\n", argv[a]);
+                list_similar(argv[a]);
                 break;
             }
             case pa_ret_missed_arg:
@@ -59,4 +64,15 @@ int main (int argc, char **argv)
     }
 
     return 0;
+}
+
+static void list_similar (const char *flagname)
+{
+    fprintf(stderr, "PA: `%s` flag is not defined\n", flagname);
+    fprintf(stderr, "    did you mean:\n");
+
+    for (unsigned int i = 0; pa_similar_flags[i]; i++)
+    {
+        fprintf(stderr, "    * %s\n", pa_similar_flags[i]);
+    }
 }

@@ -25,6 +25,8 @@ char *pa_flagname = NULL;
 char pa_unixstyle_allowed = 1;
 char pa_do_fuzzy_matching = 1;
 
+char **pa_similar_flags = NULL;
+
 /* This array stores the length of every flagname provided
  * in the options, this is made in order to not recalculate
  * them every time PA is looking for an flag.
@@ -197,7 +199,7 @@ static enum pa_return handle_2s (const char *flag, char *next, const unsigned sh
         return check_flag(opts[i].takes, next, opts[i].id);
     }
 
-    do_fuzzy_matching(flag + 2, nopts, opts);
+    do_fuzzy_matching(flag, nopts, opts);
     return pa_ret_undef_flag;
 }
 
@@ -236,19 +238,38 @@ static unsigned int unix_like (const char *thing, unsigned int *argStartsAt)
      * be zero since `i` reaches the end
      */
     unsigned int i = 0, len = strlen(thing);
-    for (; thing[0] != 0 && thing[i] != '='; i++) ;;
+    for (; i < len; i++)
+    {
+        if (thing[i] == '=')
+        {
+            if (argStartsAt) { *argStartsAt = ++i; }
+            return len - i;
+        }
+    }
 
-    *argStartsAt = i + 1;
-    return len - ++i;
+    if (argStartsAt) { *argStartsAt = 0; }
+    return 0;
 }
 
 static void do_fuzzy_matching (const char *flag, const unsigned short nopts, const struct pa_option *opts)
 {
-    const size_t flaglen = strlen(flag);
+    pa_similar_flags = (char**) calloc(nopts + 1, sizeof(*pa_similar_flags));
+    CHECK_ALLOC(pa_similar_flags);
+
+    unsigned int unixLike = unix_like(flag, NULL);
+    const size_t flaglen = unixLike == 0 ? strlen(flag) : --unixLike;
+
+    unsigned short j = 0;
 
     for (unsigned short i = 0; i < nopts; i++)
     {
         const size_t thslen = strlen(opts[i].flag);
+        double dist = jaro_distance(flag, opts[i].flag, flaglen, thslen);
+
+        if (dist >= 0.5f)
+        {
+            pa_similar_flags[j++] = opts[i].flag;
+        }
     }
 }
 
@@ -301,9 +322,4 @@ static double jaro_distance (const char *s1, const char *s2, const size_t s1len,
     const double c = ((double) matches - t) / ((double) matches);
 
     return (a + b + c) / 3.0f;
-}
-
-int main (void)
-{
-    printf("%f\n", jaro_winkler("TRATE", "TRACE"));
 }
