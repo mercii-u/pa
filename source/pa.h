@@ -62,6 +62,16 @@ extern char *pa_flagname;
  */
 extern char pa_unixstyle_allowed;
 
+/* If this flag is on and a flagname is not given
+ * correctly, pa will create a list of similar
+ * flagnames.
+ * Allowed by default.
+ */
+extern char pa_do_fuzzy_matching;
+
+/* TODO */
+extern char **pa_similar_flags;
+
 /* This is not the best name, but it's good enough.
  * This can either be an error, or the id of the
  * last argument given.
