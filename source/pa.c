@@ -204,7 +204,7 @@ static enum pa_return handle_2s (const char *flag, char *next, const unsigned sh
         return check_flag(opts[i].takes, next, opts[i].id);
     }
 
-    do_fuzzy_matching(flag, nopts, opts);
+    if (pa_do_fuzzy_matching) { do_fuzzy_matching(flag, nopts, opts); }
     return pa_ret_undef_flag;
 }
 
