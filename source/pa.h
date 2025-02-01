@@ -47,6 +47,12 @@ struct pa_option
     enum  pa_takes takes;
 };
 
+struct pa_similar
+{
+    char *flag;
+    unsigned char fav;
+};
+
 /* This variable stores the value of the last argument given
  */
 extern char *pa_argument;
@@ -72,7 +78,7 @@ extern char pa_do_fuzzy_matching;
  * pa_ret_undef_flag is returned and pa_do_fuzzy_matching
  * is on
  */
-extern char **pa_similar_flags;
+extern struct pa_similar *pa_similar;
 
 /* This is not the best name, but it's good enough.
  * This can either be an error, or the id of the

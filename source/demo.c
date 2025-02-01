@@ -131,8 +131,8 @@ static void list_similar (const char *flagname)
     fprintf(stderr, "PA: `%s` flag is not defined\n", flagname);
     fprintf(stderr, "    did you mean:\n");
 
-    for (unsigned int i = 0; pa_similar_flags[i]; i++)
+    for (unsigned int i = 0; pa_similar[i].flag; i++)
     {
-        fprintf(stderr, "    * %s\n", pa_similar_flags[i]);
+        fprintf(stderr, "    * \x1b[%dm%s\x1b[0m\n", pa_similar[i].fav ? 1 : 0, pa_similar[i].flag);
     }
 }

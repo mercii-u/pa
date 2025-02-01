@@ -25,7 +25,7 @@ char *pa_flagname = NULL;
 char pa_unixstyle_allowed = 1;
 char pa_do_fuzzy_matching = 1;
 
-char **pa_similar_flags = NULL;
+struct pa_similar *pa_similar = NULL;
 
 /* This array stores the length of every flagname provided
  * in the options, this is made in order to not recalculate
@@ -260,8 +260,8 @@ static unsigned int unix_like (const char *thing, unsigned int *argStartsAt)
 
 static void do_fuzzy_matching (const char *flag, const unsigned short nopts, const struct pa_option *opts)
 {
-    pa_similar_flags = (char**) calloc(nopts + 1, sizeof(*pa_similar_flags));
-    CHECK_ALLOC(pa_similar_flags);
+    pa_similar = (struct pa_similar*) calloc(nopts + 1, sizeof(*pa_similar));
+    CHECK_ALLOC(pa_similar);
 
 
     const unsigned int unixlike = unix_like(flag, NULL);
@@ -275,7 +275,8 @@ static void do_fuzzy_matching (const char *flag, const unsigned short nopts, con
 
         if (threshold >= 0.2f)
         {
-            pa_similar_flags[j++] = opts[i].flag;
+            pa_similar[j].flag  = (char*) opts[i].flag;
+            pa_similar[j++].fav = (threshold >= 0.5f) ? 1 : 0;
         }
     }
 }
