@@ -47,7 +47,7 @@ static enum pa_return check_flag (const enum pa_takes, char*, const char);
 static unsigned int unix_like (const char*, unsigned int*);
 
 static void do_fuzzy_matching (const char*, const unsigned short, const struct pa_option*);
-static unsigned int levenshtein (const char*, const char*, const unsigned int, const unsigned int);
+static double LevenshteinThreshold (const char*, const char*, const unsigned int, const unsigned int);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
@@ -263,15 +263,25 @@ static void do_fuzzy_matching (const char *flag, const unsigned short nopts, con
     pa_similar_flags = (char**) calloc(nopts + 1, sizeof(*pa_similar_flags));
     CHECK_ALLOC(pa_similar_flags);
 
-    for (unsigned int i = 0; i < nopts; i++)
+
+    const unsigned int unixlike = unix_like(flag, NULL);
+    const unsigned int flaglen = (unixlike == 0) ? (unsigned int) strlen(flag) : unixlike - 1;
+
+    for (unsigned int i = 0, j = 0; i < nopts; i++)
     {
+        const double threshold = LevenshteinThreshold(flag, opts[i].flag, flaglen, FlagLengths[i]);
+
+        fprintf(stderr, "%s: %s: %f\n", flag, opts[i].flag, threshold);
+
+        if (threshold >= 0.2f)
+        {
+            pa_similar_flags[j++] = opts[i].flag;
+        }
     }
 }
 
-static unsigned int levenshtein (const char *s1, const char *s2, const unsigned int l1, const unsigned int l2)
+static double LevenshteinThreshold (const char *s1, const char *s2, const unsigned int l1, const unsigned int l2)
 {
-    // s1: string which we want to turn
-    // s2: into
     unsigned short *row_0 = (unsigned short*) calloc(l1 + 1, sizeof(unsigned short)),
                    *row_1 = (unsigned short*) calloc(l1 + 1, sizeof(unsigned short));
 
@@ -279,10 +289,7 @@ static unsigned int levenshtein (const char *s1, const char *s2, const unsigned 
     for (unsigned short i = 0; i <= l1; i++)
     {
         row_0[i] = i;
-        printf("%d ", row_0[i]);
     }
-    printf("\n");
-
     for (unsigned short i = 1; i <= l2; i++)
     {
         row_1[0] = i;
@@ -298,17 +305,13 @@ static unsigned int levenshtein (const char *s1, const char *s2, const unsigned 
                 row_1[j] = r;
             }
         }
-
-        for (unsigned short j = 0; j <= l1; j++)
-            printf("%d ", row_1[j]);
-        printf("\n");
-
         memcpy(row_0, row_1, sizeof(*row_1) * (l1 + 1));
         memset(row_1, 0, sizeof(*row_1) * (l1 + 1));
     }
-}
 
-int main ()
-{
-    levenshtein("replace", "delete", 7, 6);
+    const unsigned short steps = row_0[l1];
+    free(row_0);
+    free(row_1);
+
+    return 1 - ((double) steps / MAX(l1, l2));
 }
