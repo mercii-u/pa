@@ -185,11 +185,13 @@ static enum pa_return handle_2s (const char *flag, char *next, const unsigned sh
         if (strncmp(flag, opts[i].flag, FlagLengths[i])) { continue; }
         pa_flagname = opts[i].flag;
 
-        if (pa_unixstyle_allowed)
+        unsigned int argStartsAt, diff = 0;
+        if (pa_unixstyle_allowed == 1)
         {
-            unsigned int argStartsAt;
-            const unsigned int diff = unix_like(flag, &argStartsAt);
-
+            diff = unix_like(flag, &argStartsAt);
+        }
+        if (diff != 0)
+        {
             if (opts[i].takes == pa_noway_arg) { return diff ? pa_ret_nonsense : opts[i].id; }
             if (opts[i].takes == pa_might_arg && diff == 0) { return opts[i].id; }
             if (opts[i].takes == pa_takes_arg && diff == 0) { return pa_ret_missed_arg; }
