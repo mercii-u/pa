@@ -26,19 +26,18 @@ enum pa_return
     /* External usage, the caller function
      * uses these enums to handle errors
      */
-    pa_ret_cest_fini    =  0,                               // ok
-    pa_ret_pos_arg      = -1,                               // ok
-    pa_ret_undef_flag   = -2,                               // ok
+    pa_ret_cest_fini    =  0,
+    pa_ret_pos_arg      = -1,
+    pa_ret_undef_flag   = -2,
     pa_ret_missed_arg   = -3,
-    pa_ret_nonsense     = -4,                               // ok
+    pa_ret_nonsense     = -4,
     /* Internal usage, pa.c uses these enums
      * to know what is the nature of each
      * element in argv
      */
-    pa_ret_argument     = -5,                               // ok
-    pa_ret_end_argv     = -6,                               // might unnecessary
-    pa_ret_1s_flag      = -7,                               // ok
-    pa_ret_2s_flag      = -8,                               // ok
+    pa_ret_argument     = -5,
+    pa_ret_1s_flag      = -6,
+    pa_ret_2s_flag      = -7,
 };
 
 struct pa_option
@@ -69,7 +68,10 @@ extern char pa_unixstyle_allowed;
  */
 extern char pa_do_fuzzy_matching;
 
-/* TODO */
+/* List of most similiar flags, use it only if
+ * pa_ret_undef_flag is returned and pa_do_fuzzy_matching
+ * is on
+ */
 extern char **pa_similar_flags;
 
 /* This is not the best name, but it's good enough.
