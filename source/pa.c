@@ -12,10 +12,10 @@
         exit(EXIT_FAILURE);                                \
     } while (0)
 
-#define MAX(a, b)   ((a) > (b) ? (a) : (b))
-#define MIN(a, b)   ((a) < (b) ? (a) : (b))
+#define MAX(a, b)          ((a) > (b) ? (a) : (b))
+#define MIN(a, b)          ((a) < (b) ? (a) : (b))
 
-#define PATH_SPECIFIER(a)   ((a == '~') || (a == '.') || (a == '/'))
+#define PATH_SPECIFIER(a)  ((a == '~') || (a == '.') || (a == '/'))
 
 /* Extern defs.
  */
@@ -47,7 +47,7 @@ static enum pa_return check_flag (const enum pa_takes, char*, const char);
 static unsigned int unix_like (const char*, unsigned int*);
 
 static void do_fuzzy_matching (const char*, const unsigned short, const struct pa_option*);
-static double jaro_distance (const char*, const char*, const size_t, const size_t);
+static unsigned int levenshtein (const char*, const char*, const unsigned int, const unsigned int);
 
 pa_t pa_get (const unsigned int argc, char **argv, unsigned short *index, const unsigned short nopts, const struct pa_option *opts)
 {
@@ -263,70 +263,52 @@ static void do_fuzzy_matching (const char *flag, const unsigned short nopts, con
     pa_similar_flags = (char**) calloc(nopts + 1, sizeof(*pa_similar_flags));
     CHECK_ALLOC(pa_similar_flags);
 
-    unsigned int unixLike = unix_like(flag, NULL);
-    const size_t flaglen = unixLike == 0 ? strlen(flag) : --unixLike;
-
-    unsigned short j = 0;
-
-    for (unsigned short i = 0; i < nopts; i++)
+    for (unsigned int i = 0; i < nopts; i++)
     {
-        const size_t thslen = strlen(opts[i].flag);
-        double dist = jaro_distance(flag, opts[i].flag, flaglen, thslen);
-
-        if (dist >= 0.5f)
-        {
-            pa_similar_flags[j++] = opts[i].flag;
-        }
     }
 }
 
-static double jaro_distance (const char *s1, const char *s2, const size_t s1len, const size_t s2len)
+static unsigned int levenshtein (const char *s1, const char *s2, const unsigned int l1, const unsigned int l2)
 {
-    if (!strncmp(s1, s2, s1len) && s1 == s2) { return 1.0f; }
+    // s1: string which we want to turn
+    // s2: into
+    unsigned short *row_0 = (unsigned short*) calloc(l1 + 1, sizeof(unsigned short)),
+                   *row_1 = (unsigned short*) calloc(l1 + 1, sizeof(unsigned short));
 
-    const unsigned int maxDist = ((unsigned int) (MAX(s1len, s2len) >> 1)) - 1;
-
-    unsigned int matches = 0;
-
-    unsigned int* hash1 = (unsigned int*) calloc(s1len, sizeof(unsigned int));
-    unsigned int* hash2 = (unsigned int*) calloc(s2len, sizeof(unsigned int));
-
-    CHECK_ALLOC(hash1);
-    CHECK_ALLOC(hash2);
-
-    for (unsigned int i = 0; i < (unsigned int) s1len; i++)
+    CHECK_ALLOC(row_0); CHECK_ALLOC(row_1);
+    for (unsigned short i = 0; i <= l1; i++)
     {
-        for (unsigned int j = i - maxDist; j < MIN(s2len, i + maxDist + 1); j++)
+        row_0[i] = i;
+        printf("%d ", row_0[i]);
+    }
+    printf("\n");
+
+    for (unsigned short i = 1; i <= l2; i++)
+    {
+        row_1[0] = i;
+        for (unsigned short j = 1; j <= l1; j++)
         {
-            if (s1[i] == s2[j] && hash2[j] == 0)
+            const unsigned short r = row_0[j - 1], d = row_0[j], I = row_1[j - 1];
+            if (s1[j - 1] != s2[i - 1])
             {
-                hash1[i] = 1;
-                hash2[i] = 1;
-                matches++;
-                break;
+                row_1[j] = 1 + MIN(r, MIN(d, I));
+            }
+            else
+            {
+                row_1[j] = r;
             }
         }
+
+        for (unsigned short j = 0; j <= l1; j++)
+            printf("%d ", row_1[j]);
+        printf("\n");
+
+        memcpy(row_0, row_1, sizeof(*row_1) * (l1 + 1));
+        memset(row_1, 0, sizeof(*row_1) * (l1 + 1));
     }
+}
 
-    if (matches == 0) { return 0.0f; }
-
-    double t = 0;
-    int pnt = 0;
-
-    for (unsigned int i = 0; i < s1len; i++)
-    {
-        if (hash1[i] != 0)
-        {
-            while (hash2[pnt] == 0) { pnt++; }
-            if (s1[i] != s2[pnt++]) { t++; }
-        }
-    }
-
-    t /= 2.0f;
-
-    const double a = ((double) matches)     / ((double) s1len);
-    const double b = ((double) matches)     / ((double) s2len);
-    const double c = ((double) matches - t) / ((double) matches);
-
-    return (a + b + c) / 3.0f;
+int main ()
+{
+    levenshtein("replace", "delete", 7, 6);
 }
