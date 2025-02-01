@@ -134,7 +134,7 @@ static void check_options_are_ok (const struct pa_option *opts, const unsigned s
 
     if (errReason != NULL)
     {
-        static const char const *err =
+        static const char *const err =
          "\n"
          "  [PA:%s]: cannot continue...\n"
          "   due to: %s\n"
@@ -292,9 +292,9 @@ static double jaro_distance (const char *s1, const char *s2, const size_t s1len,
     CHECK_ALLOC(hash1);
     CHECK_ALLOC(hash2);
 
-    for (signed int i = 0; i < s1len; i++)
+    for (unsigned int i = 0; i < (unsigned int) s1len; i++)
     {
-        for (signed int j = MAX(0, i - maxDist); j < MIN(s2len, i + maxDist + 1); j++)
+        for (unsigned int j = i - maxDist; j < MIN(s2len, i + maxDist + 1); j++)
         {
             if (s1[i] == s2[j] && hash2[j] == 0)
             {
