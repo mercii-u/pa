@@ -263,15 +263,12 @@ static void do_fuzzy_matching (const char *flag, const unsigned short nopts, con
     pa_similar = (struct pa_similar*) calloc(nopts + 1, sizeof(*pa_similar));
     CHECK_ALLOC(pa_similar);
 
-
     const unsigned int unixlike = unix_like(flag, NULL);
     const unsigned int flaglen = (unixlike == 0) ? (unsigned int) strlen(flag) : unixlike - 1;
 
     for (unsigned int i = 0, j = 0; i < nopts; i++)
     {
         const double threshold = LevenshteinThreshold(flag, opts[i].flag, flaglen, FlagLengths[i]);
-
-        fprintf(stderr, "%s: %s: %f\n", flag, opts[i].flag, threshold);
 
         if (threshold >= 0.2f)
         {
